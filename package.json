@@ -1,0 +1,26 @@
+{
+  "name": "discord-copycat",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/react-mentions": "^4.1.5",
+    "easymde": "^2.15.0",
+    "next": "11.1.2",
+    "react": "17.0.2",
+    "react-mentions": "^4.3.0",
+    "sass": "^1.43.3",
+    "simple-text-parser": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "17.0.33",
+    "eslint": "7.32.0",
+    "eslint-config-next": "11.1.2",
+    "typescript": "4.4.4"
+  }
+}
