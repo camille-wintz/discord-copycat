@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Parser } from "simple-text-parser";
+import { useMemo } from "react";
+import Parser from "simple-text-parser";
 
-export const Renderer = ({ value }: { value: string }) => {
-  const parser = useMemo(() => {
+export const useParser = () => {
+  return useMemo(() => {
     const p = new Parser();
     p.addRule(/\#[\S]+/gi, function (tag) {
       return `<span class="chan">${tag}</span>`;
@@ -15,6 +15,4 @@ export const Renderer = ({ value }: { value: string }) => {
     });
     return p;
   }, []);
-
-  return <div dangerouslySetInnerHTML={{ __html: parser.render(value) }}></div>;
 };
