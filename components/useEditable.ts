@@ -103,8 +103,10 @@ export const useEditable = (value: string) => {
   const { setCaret, caretIndex, findNode } = useEditorTools();
 
   const getCaretIndex = () => caretIndex(editable.current as Node);
-  const setCaretIndex = (pos: number) =>
+  const setCaretIndex = (pos: number) => {
+    console.log(pos);
     setCaret(pos, editable.current as Node);
+  };
 
   useEffect(() => {
     setTimeout(() => {

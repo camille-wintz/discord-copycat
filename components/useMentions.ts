@@ -6,7 +6,7 @@ export const useMentions = <T>(
   dataSource: string,
   element: MutableRefObject<Node | null | undefined>
 ) => {
-  const { caretIndex } = useEditorTools();
+  const { caretIndex, setCaret } = useEditorTools();
   const [data, setData] = useState<T[]>();
   const [show, setShow] = useState(false);
 
@@ -50,6 +50,10 @@ export const useMentions = <T>(
     while (value[endOfWord + 1] !== " " && endOfWord < value.length - 1) {
       endOfWord++;
     }
+
+    setTimeout(() => {
+      setCaret((pos || 0) + mention.length + 2, element.current as Node);
+    }, 100);
 
     return (
       value.slice(0, startOfWord) +
