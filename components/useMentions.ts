@@ -1,10 +1,12 @@
 import { MutableRefObject, useCallback, useEffect, useState } from "react";
+import { useEditorTools } from "./useEditable";
 
 export const useMentions = <T>(
   trigger: string,
   dataSource: string,
   element: MutableRefObject<Node | null | undefined>
 ) => {
+  const { caretIndex } = useEditorTools();
   const [data, setData] = useState<T[]>();
   const [show, setShow] = useState(false);
 
@@ -32,6 +34,32 @@ export const useMentions = <T>(
     [setShow]
   );
 
+  const insertMention = (value: string, mention: string) => {
+    let pos = caretIndex(element.current as Node);
+
+    if (pos === undefined) {
+      return value;
+    }
+
+    let startOfWord = pos;
+    while (value[startOfWord - 1] !== " " && startOfWord > 0) {
+      startOfWord--;
+    }
+
+    let endOfWord = pos;
+    while (value[endOfWord + 1] !== " " && endOfWord < value.length - 1) {
+      endOfWord++;
+    }
+
+    return (
+      value.slice(0, startOfWord) +
+      "<" +
+      mention +
+      "> " +
+      value.slice(endOfWord)
+    );
+  };
+
   const unfocus = () => {
     setTimeout(() => setShow(false));
   };
@@ -56,7 +84,9 @@ export const useMentions = <T>(
 
   return {
     show,
+    setShow,
     data,
     watchTrigger,
+    insertMention,
   };
 };

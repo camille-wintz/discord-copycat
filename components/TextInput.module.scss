@@ -1,19 +1,5 @@
 @import "../styles/colors";
 
-.options {
-  display: none;
-  position: absolute;
-  bottom: 100%;
-  background-color: $modalBg;
-  width: 100%;
-  box-shadow: 0px 2px rgba(0, 0, 0, 0.15);
-  padding: 8px;
-
-  &.visible {
-    display: block;
-  }
-}
-
 .input {
   caret-color: $text;
   text-align: left;
@@ -21,29 +7,9 @@
   white-space: break-spaces !important;
   background-color: $inputBg;
   font-size: 16px;
-  border-radius: 8px;
+  border-radius: 4px;
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 8px;
   padding-bottom: 8px;
-}
-
-.user,
-.chan {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 8px;
-  border-radius: 3px;
-
-  &:hover {
-    background-color: rgba($highlight, 0.05);
-  }
-
-  img {
-    height: 24px;
-    width: 24px;
-    border-radius: 12px;
-    margin-right: 8px;
-  }
 }

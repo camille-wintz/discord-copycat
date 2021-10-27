@@ -1,33 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export const useEditable = (value: string) => {
-  const [currentWord, setCurrentWord] = useState("");
-  const editable = useRef<Node | undefined | null>();
-
-  const getCaretIndex = () => {
-    const element = editable.current;
-    if (!element) {
-      return;
-    }
-
-    let position = 0;
-    const selection = document.getSelection();
-    if (selection?.rangeCount) {
-      const range = selection.getRangeAt(0);
-
-      if (!range) {
-        return 0;
-      }
-
-      const preCaretRange = range?.cloneRange();
-      preCaretRange?.selectNodeContents(element);
-      preCaretRange?.setEnd(range.endContainer, range.endOffset);
-      position = preCaretRange.toString().length;
-    }
-
-    return position;
-  };
-
+export const useEditorTools = () => {
   const findNode = ({
     pos,
     node,
@@ -38,8 +11,6 @@ export const useEditable = (value: string) => {
     if (!node) {
       return null;
     }
-
-    console.log(node);
 
     if (
       node.nodeType === Node.ELEMENT_NODE &&
@@ -74,32 +45,66 @@ export const useEditable = (value: string) => {
     });
   };
 
-  const setCaretIndex = (pos: number) => {
-    const element = editable.current;
-    const selection = document.getSelection();
-    const range = document.createRange();
+  return {
+    caretIndex: (element: Node) => {
+      if (!element) {
+        return;
+      }
 
-    if (!element || !selection) {
-      return;
-    }
+      let position = 0;
+      const selection = document.getSelection();
+      if (selection?.rangeCount) {
+        const range = selection.getRangeAt(0);
 
-    const targetRange = findNode({ pos, node: editable.current as Node });
-    console.log(targetRange);
+        if (!range) {
+          return 0;
+        }
 
-    if (!targetRange) {
-      return;
-    }
+        const preCaretRange = range?.cloneRange();
+        preCaretRange?.selectNodeContents(element);
+        preCaretRange?.setEnd(range.endContainer, range.endOffset);
+        position = preCaretRange.toString().length;
+      }
 
-    try {
-      range.setStart(targetRange.node, targetRange.pos);
-      range.setEnd(targetRange.node, targetRange.pos);
-    } catch (e) {
-      console.log(targetRange);
-    }
+      return position;
+    },
+    setCaret: (pos: number, element: Node) => {
+      const selection = document.getSelection();
+      const range = document.createRange();
 
-    selection.removeAllRanges();
-    selection.addRange(range);
+      if (!element || !selection) {
+        return;
+      }
+
+      const targetRange = findNode({ pos, node: element });
+
+      if (!targetRange) {
+        return;
+      }
+
+      try {
+        range.setStart(targetRange.node, targetRange.pos);
+        range.setEnd(targetRange.node, targetRange.pos);
+      } catch (e) {
+        console.log(targetRange);
+      }
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+    },
+    findNode,
   };
+};
+
+export const useEditable = (value: string) => {
+  const [currentWord, setCurrentWord] = useState("");
+  const editable = useRef<Node | undefined | null>();
+
+  const { setCaret, caretIndex, findNode } = useEditorTools();
+
+  const getCaretIndex = () => caretIndex(editable.current as Node);
+  const setCaretIndex = (pos: number) =>
+    setCaret(pos, editable.current as Node);
 
   useEffect(() => {
     setTimeout(() => {
@@ -110,6 +115,7 @@ export const useEditable = (value: string) => {
       }
 
       let startOfWord = pos;
+
       while (
         value[startOfWord - 1] !== " " &&
         value[startOfWord - 1] !== "&#8203;" &&
@@ -123,41 +129,18 @@ export const useEditable = (value: string) => {
         endOfWord++;
       }
 
-      setCurrentWord(value.slice(startOfWord, endOfWord));
+      setCurrentWord(
+        value
+          .slice(startOfWord, endOfWord)
+          .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      );
     }, 2);
   }, [value, editable.current]);
-
-  const insertMention = (value: string, mention: string) => {
-    let pos = getCaretIndex();
-
-    if (pos === undefined) {
-      return value;
-    }
-
-    let startOfWord = pos;
-    while (value[startOfWord - 1] !== " " && startOfWord > 0) {
-      startOfWord--;
-    }
-
-    let endOfWord = pos;
-    while (value[endOfWord + 1] !== " " && endOfWord < value.length - 1) {
-      endOfWord++;
-    }
-
-    return (
-      value.slice(0, startOfWord) +
-      "<" +
-      mention +
-      "> " +
-      value.slice(endOfWord)
-    );
-  };
 
   return {
     editable,
     getCaretIndex,
     setCaretIndex,
-    insertMention,
     currentWord,
   };
 };

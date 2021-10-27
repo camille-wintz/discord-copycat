@@ -3,6 +3,7 @@ import { useParser } from "./useParser";
 import styles from "./TextInput.module.scss";
 import { useEditable } from "./useEditable";
 import { useMentions } from "./useMentions";
+import { OptionsPanel } from "./OptionsPanel";
 
 export const TextInput = ({
   value,
@@ -12,17 +13,20 @@ export const TextInput = ({
   onChange: (e: string) => void;
 }) => {
   const parser = useParser();
-  const { getCaretIndex, setCaretIndex, insertMention, editable, currentWord } =
+  const { getCaretIndex, setCaretIndex, editable, currentWord } =
     useEditable(value);
   const {
     show: showMentions,
+    setShow: setShowMentions,
     data: mentions,
     watchTrigger: triggerMentions,
+    insertMention,
   } = useMentions<{
     username: string;
   }>("@", "users", editable);
   const {
     show: showChannels,
+    setShow: setShowChannels,
     data: channels,
     watchTrigger: triggerChans,
   } = useMentions<{ name: string }>("#", "channels", editable);
@@ -36,6 +40,17 @@ export const TextInput = ({
     m.name.toLowerCase().startsWith(currentWord.toLowerCase().replace("#", ""))
   );
 
+  const keydownCb = (e: KeyboardEvent) => {
+    if (
+      e.key === "ArrowUp" ||
+      e.key === "ArrowDown" ||
+      (e.key === "b" && e.ctrlKey) ||
+      (e.key === "i" && e.ctrlKey)
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const keyupCb = (e: KeyboardEvent) => {
     const divElement = editable.current as HTMLDivElement;
 
@@ -43,7 +58,9 @@ export const TextInput = ({
       return;
     }
 
-    console.log(document.getSelection()?.getRangeAt(0));
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      return;
+    }
 
     triggerMentions(e);
     triggerChans(e);
@@ -58,8 +75,15 @@ export const TextInput = ({
 
   useEffect(() => {
     editable.current?.addEventListener("keyup", keyupCb as EventListener);
-    return () =>
+    editable.current?.addEventListener("keydown", keydownCb as EventListener);
+
+    return () => {
       editable.current?.removeEventListener("keyup", keyupCb as EventListener);
+      editable.current?.removeEventListener(
+        "keydown",
+        keydownCb as EventListener
+      );
+    };
   }, [editable.current]);
 
   useEffect(() => {
@@ -71,42 +95,35 @@ export const TextInput = ({
 
   return (
     <div>
-      {filteredMentions ? (
-        <div
-          className={
-            styles.options + " " + (showMentions ? styles.visible : "")
-          }
-        >
-          {filteredMentions.map((el) => (
-            <div
-              className={styles.user}
-              onMouseDown={() =>
-                onChange(insertMention(value, "@" + el.username))
-              }
-            >
-              <img src="/avatar.png" />
-              <span>{el.username}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {filteredChannels ? (
-        <div
-          className={
-            styles.options + " " + (showChannels ? styles.visible : "")
-          }
-        >
-          {filteredChannels.map((el) => (
-            <div
-              className={styles.chan}
-              onMouseDown={() => onChange(insertMention(value, "#" + el.name))}
-            >
-              <img src="/hash.svg" />
-              <span>{el.name}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <OptionsPanel<{ username: string }>
+        show={showMentions}
+        options={filteredMentions}
+        renderElement={(el) => (
+          <>
+            <img src="/avatar.png" />
+            <span>{el.username}</span>
+          </>
+        )}
+        onSelect={(el) => {
+          setShowMentions(false);
+          onChange(insertMention(value, "@" + el.username));
+        }}
+      />
+
+      <OptionsPanel<{ name: string }>
+        show={showChannels}
+        options={filteredChannels}
+        renderElement={(el) => (
+          <>
+            <img src="/hash.svg" />
+            <span>{el.name}</span>
+          </>
+        )}
+        onSelect={(el) => {
+          setShowChannels(false);
+          onChange(insertMention(value, "#" + el.name));
+        }}
+      />
 
       <div
         className={styles.input}
