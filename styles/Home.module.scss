@@ -1,11 +1,16 @@
+@import "../styles/colors";
+
 .container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background-color: $bg;
+  padding: 15px;
 
   .chat {
     flex-grow: 1;
   }
   .textbox {
+    position: relative;
   }
 }

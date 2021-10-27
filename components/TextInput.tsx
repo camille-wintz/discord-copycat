@@ -1,51 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { useParser } from "./ParseChat";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useParser } from "./useParser";
 import styles from "./TextInput.module.scss";
-
-function getCaretIndex(element: Node) {
-  let position = 0;
-  const selection = document.getSelection();
-  if (selection?.rangeCount) {
-    const range = document.getSelection()?.getRangeAt(0);
-
-    if (!range) {
-      return 0;
-    }
-
-    const preCaretRange = range?.cloneRange();
-    preCaretRange?.selectNodeContents(element);
-    preCaretRange?.setEnd(range.endContainer, range.endOffset);
-    position = preCaretRange.toString().length;
-  }
-
-  return position;
-}
-
-function setCaretIndex(node: Node, pos: number) {
-  const selection = document.getSelection();
-  const range = document.createRange();
-
-  for (let i = 0; i < node.childNodes.length; i++) {
-    if (pos <= (node.childNodes[i].textContent?.length || 0)) {
-      const n =
-        node.childNodes[i].nodeType === Node.TEXT_NODE
-          ? node.childNodes[i]
-          : node.childNodes[i].firstChild;
-
-      if (!n) {
-        continue;
-      }
-
-      range.setStart(n, pos);
-      range.setEnd(n, pos);
-      break;
-    }
-
-    pos -= node.childNodes[i].textContent?.length || 0;
-  }
-  selection?.removeAllRanges();
-  selection?.addRange(range);
-}
+import { useEditable } from "./useEditable";
+import { useMentions } from "./useMentions";
 
 export const TextInput = ({
   value,
@@ -55,35 +12,107 @@ export const TextInput = ({
   onChange: (e: string) => void;
 }) => {
   const parser = useParser();
-  const editable = useRef<HTMLDivElement | undefined | null>();
-  const area = useRef<HTMLTextAreaElement | undefined | null>();
+  const { getCaretIndex, setCaretIndex, insertMention, editable, currentWord } =
+    useEditable(value);
+  const {
+    show: showMentions,
+    data: mentions,
+    watchTrigger: triggerMentions,
+  } = useMentions<{
+    username: string;
+  }>("@", "users", editable);
+  const {
+    show: showChannels,
+    data: channels,
+    watchTrigger: triggerChans,
+  } = useMentions<{ name: string }>("#", "channels", editable);
+
+  const filteredMentions = mentions?.filter((m) =>
+    m.username
+      .toLowerCase()
+      .startsWith(currentWord.toLowerCase().replace("@", ""))
+  );
+  const filteredChannels = channels?.filter((m) =>
+    m.name.toLowerCase().startsWith(currentWord.toLowerCase().replace("#", ""))
+  );
+
+  const keyupCb = (e: KeyboardEvent) => {
+    const divElement = editable.current as HTMLDivElement;
+
+    if (!divElement || divElement.innerHTML === parser.render(value)) {
+      return;
+    }
+
+    console.log(document.getSelection()?.getRangeAt(0));
+
+    triggerMentions(e);
+    triggerChans(e);
+
+    const pos = getCaretIndex();
+    document.getSelection()?.removeAllRanges();
+    onChange(divElement.textContent || "");
+    divElement.innerHTML =
+      parser.render(divElement.textContent || "") || "&#8203;";
+    setTimeout(() => setCaretIndex(pos || 0), 0);
+  };
 
   useEffect(() => {
-    editable.current?.addEventListener("keyup", (e) => {
-      if (!editable.current || editable.current?.innerText === value) {
-        return;
-      }
-      const pos = getCaretIndex(editable.current);
-      onChange(editable.current?.innerText || "");
-      setCaretIndex(editable.current, pos);
-    });
+    editable.current?.addEventListener("keyup", keyupCb as EventListener);
+    return () =>
+      editable.current?.removeEventListener("keyup", keyupCb as EventListener);
   }, [editable.current]);
 
   useEffect(() => {
     if (editable.current) {
-      editable.current.innerHTML = parser.render(value);
+      const divElement = editable.current as HTMLDivElement;
+      divElement.innerHTML = parser.render(value) || "&#8203;";
     }
   }, [value]);
 
   return (
     <div>
-      <div className={styles.options}>
-        {[{ id: "@niph" }].map((el) => (
-          <div className={styles.options}>{el.id}</div>
-        ))}
-      </div>
+      {filteredMentions ? (
+        <div
+          className={
+            styles.options + " " + (showMentions ? styles.visible : "")
+          }
+        >
+          {filteredMentions.map((el) => (
+            <div
+              className={styles.user}
+              onMouseDown={() =>
+                onChange(insertMention(value, "@" + el.username))
+              }
+            >
+              <img src="/avatar.png" />
+              <span>{el.username}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {filteredChannels ? (
+        <div
+          className={
+            styles.options + " " + (showChannels ? styles.visible : "")
+          }
+        >
+          {filteredChannels.map((el) => (
+            <div
+              className={styles.chan}
+              onMouseDown={() => onChange(insertMention(value, "#" + el.name))}
+            >
+              <img src="/hash.svg" />
+              <span>{el.name}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-      <div contentEditable ref={(r) => (editable.current = r)}></div>
+      <div
+        className={styles.input}
+        contentEditable
+        ref={(r) => (editable.current = r)}
+      ></div>
     </div>
   );
 };

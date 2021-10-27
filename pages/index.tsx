@@ -6,7 +6,8 @@ import { TextInput } from "../components/TextInput";
 import styles from "../styles/Home.module.scss";
 
 const Home: NextPage = () => {
-  const [text, setText] = useState(`**Test**`);
+  const [text, setText] = useState(``);
+  console.log(text);
 
   return (
     <div className={styles.container}>

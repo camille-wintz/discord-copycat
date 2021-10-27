@@ -1,0 +1,13 @@
+.mention,
+.chan {
+  background-color: $darkBlue;
+  position: relative;
+  color: $blue;
+  border-radius: 2px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+
+  .hidden {
+    display: none;
+  }
+}
