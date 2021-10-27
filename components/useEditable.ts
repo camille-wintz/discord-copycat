@@ -39,28 +39,39 @@ export const useEditable = (value: string) => {
       return null;
     }
 
+    console.log(node);
+
     if (
-      (node.nodeType === Node.TEXT_NODE && node.textContent?.length) ||
-      0 >= pos
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node as Element).getAttribute("contenteditable") === "false" &&
+      node.textContent?.length === pos
+    ) {
+      return {
+        node: node.parentNode || node,
+        pos:
+          Array.prototype.indexOf.call(node.parentNode?.childNodes, node) + 1 ||
+          0,
+      };
+    }
+
+    if (
+      node.nodeType === Node.TEXT_NODE &&
+      (node.textContent?.length || 0) >= pos
     ) {
       return { node, pos };
     }
     if ((node.textContent?.length || 0) < pos) {
+      console.log(pos - (node.textContent?.length || 0));
       return findNode({
         pos: pos - (node.textContent?.length || 0),
         node: node.nextSibling,
       });
     }
 
-    let el = node.firstChild;
-    while (el) {
-      if (el.textContent?.length || 0 >= pos) {
-        return findNode({ node: el, pos });
-      }
-      el = el.nextSibling;
-      pos -= el?.textContent?.length || 0;
-    }
-    return null;
+    return findNode({
+      node: node.firstChild,
+      pos: pos,
+    });
   };
 
   const setCaretIndex = (pos: number) => {
@@ -73,6 +84,7 @@ export const useEditable = (value: string) => {
     }
 
     const targetRange = findNode({ pos, node: editable.current as Node });
+    console.log(targetRange);
 
     if (!targetRange) {
       return;
