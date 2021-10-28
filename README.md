@@ -1,5 +1,9 @@
 # React autocomplete skill test
 
+## Start
+
+npm run dev
+
 ## Deliverable
 
 A react textarea component that has a Discord-like users and channels autocomplete + formatting
