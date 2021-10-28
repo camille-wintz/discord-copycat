@@ -1,52 +1,54 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const useEditorTools = () => {
-  const findNode = ({
-    pos,
-    node,
-  }: {
-    pos: number;
-    node: Node | null;
-  }): { node: Node; pos: number } | null => {
-    if (!node) {
-      return null;
-    }
+  const findNode = useCallback(
+    ({
+      pos,
+      node,
+    }: {
+      pos: number;
+      node: Node | null;
+    }): { node: Node; pos: number } | null => {
+      if (!node) {
+        return null;
+      }
 
-    if (
-      node.nodeType === Node.ELEMENT_NODE &&
-      (node as Element).getAttribute("contenteditable") === "false" &&
-      node.textContent?.length === pos
-    ) {
-      return {
-        node: node.parentNode || node,
-        pos:
-          Array.prototype.indexOf.call(node.parentNode?.childNodes, node) + 1 ||
-          0,
-      };
-    }
+      if (
+        node.nodeType === Node.ELEMENT_NODE &&
+        (node as Element).getAttribute("contenteditable") === "false" &&
+        node.textContent?.length === pos
+      ) {
+        return {
+          node: node.parentNode || node,
+          pos:
+            Array.prototype.indexOf.call(node.parentNode?.childNodes, node) +
+              1 || 0,
+        };
+      }
 
-    if (
-      node.nodeType === Node.TEXT_NODE &&
-      (node.textContent?.length || 0) >= pos
-    ) {
-      return { node, pos };
-    }
-    if ((node.textContent?.length || 0) < pos) {
-      console.log(pos - (node.textContent?.length || 0));
+      if (
+        node.nodeType === Node.TEXT_NODE &&
+        (node.textContent?.length || 0) >= pos
+      ) {
+        return { node, pos };
+      }
+      if ((node.textContent?.length || 0) < pos) {
+        return findNode({
+          pos: pos - (node.textContent?.length || 0),
+          node: node.nextSibling,
+        });
+      }
+
       return findNode({
-        pos: pos - (node.textContent?.length || 0),
-        node: node.nextSibling,
+        node: node.firstChild,
+        pos: pos,
       });
-    }
-
-    return findNode({
-      node: node.firstChild,
-      pos: pos,
-    });
-  };
+    },
+    []
+  );
 
   return {
-    caretIndex: (element: Node) => {
+    caretIndex: useCallback((element: Node) => {
       if (!element) {
         return;
       }
@@ -67,8 +69,8 @@ export const useEditorTools = () => {
       }
 
       return position;
-    },
-    setCaret: (pos: number, element: Node) => {
+    }, []),
+    setCaret: useCallback((pos: number, element: Node) => {
       const selection = document.getSelection();
       const range = document.createRange();
 
@@ -91,7 +93,7 @@ export const useEditorTools = () => {
 
       selection.removeAllRanges();
       selection.addRange(range);
-    },
+    }, []),
     findNode,
   };
 };
@@ -104,7 +106,6 @@ export const useEditable = (value: string) => {
 
   const getCaretIndex = () => caretIndex(editable.current as Node);
   const setCaretIndex = (pos: number) => {
-    console.log(pos);
     setCaret(pos, editable.current as Node);
   };
 

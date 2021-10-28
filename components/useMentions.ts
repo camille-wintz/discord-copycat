@@ -34,7 +34,7 @@ export const useMentions = <T>(
     [setShow]
   );
 
-  const insertMention = (value: string, mention: string) => {
+  const insertMention = useCallback((value: string, mention: string) => {
     let pos = caretIndex(element.current as Node);
 
     if (pos === undefined) {
@@ -53,7 +53,7 @@ export const useMentions = <T>(
 
     setTimeout(() => {
       setCaret((pos || 0) + mention.length + 2, element.current as Node);
-    }, 100);
+    }, 50);
 
     return (
       value.slice(0, startOfWord) +
@@ -62,10 +62,10 @@ export const useMentions = <T>(
       "> " +
       value.slice(endOfWord)
     );
-  };
+  }, []);
 
   const unfocus = () => {
-    setTimeout(() => setShow(false));
+    setTimeout(() => setShow(false), 0);
   };
 
   useEffect(() => {
@@ -89,7 +89,23 @@ export const useMentions = <T>(
   return {
     show,
     setShow,
-    data,
+    data: (search: string) => {
+      if (!show) {
+        return [];
+      }
+      return data?.filter((el) => {
+        let match = false;
+        for (let prop in el) {
+          match =
+            match ||
+            (typeof el[prop] === "string" &&
+              (el[prop] as any)
+                .toLowerCase()
+                .startsWith(search.replace(trigger, "").toLowerCase()));
+        }
+        return match;
+      });
+    },
     watchTrigger,
     insertMention,
   };

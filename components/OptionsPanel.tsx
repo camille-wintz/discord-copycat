@@ -6,11 +6,13 @@ export function OptionsPanel<T>({
   renderElement,
   onSelect,
   show,
+  onDismiss,
 }: {
   options: T[] | undefined;
   renderElement: (el: T) => JSX.Element;
   onSelect: (el: T) => void;
   show: boolean;
+  onDismiss: () => void;
 }): JSX.Element | null {
   const [selected, setSelected] = useState<T | undefined>();
   const selectedPointer = useRef<T | undefined>();
@@ -22,7 +24,6 @@ export function OptionsPanel<T>({
 
   useEffect(() => {
     const navigate = (e: KeyboardEvent) => {
-      console.log(options);
       if (e.key === "ArrowUp") {
         if (!options || !showPointer.current) {
           return;
@@ -62,6 +63,16 @@ export function OptionsPanel<T>({
         e.preventDefault();
         e.stopPropagation();
       }
+      if (e.key === "Escape") {
+        if (!showPointer.current) {
+          return;
+        }
+
+        onDismiss();
+
+        e.preventDefault();
+        e.stopPropagation();
+      }
     };
 
     document.addEventListener("keydown", navigate);
@@ -70,8 +81,9 @@ export function OptionsPanel<T>({
 
   return options ? (
     <div className={styles.options + " " + (show ? styles.visible : "")}>
-      {options.map((el) => (
+      {options.map((el, i) => (
         <div
+          key={i}
           className={
             styles.option + " " + (selected === el ? styles.selected : "")
           }

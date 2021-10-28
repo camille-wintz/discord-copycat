@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useParser } from "./useParser";
 import styles from "./TextInput.module.scss";
 import { useEditable } from "./useEditable";
@@ -31,15 +31,6 @@ export const TextInput = ({
     watchTrigger: triggerChans,
   } = useMentions<{ name: string }>("#", "channels", editable);
 
-  const filteredMentions = mentions?.filter((m) =>
-    m.username
-      .toLowerCase()
-      .startsWith(currentWord.toLowerCase().replace("@", ""))
-  );
-  const filteredChannels = channels?.filter((m) =>
-    m.name.toLowerCase().startsWith(currentWord.toLowerCase().replace("#", ""))
-  );
-
   const keydownCb = (e: KeyboardEvent) => {
     if (
       e.key === "ArrowUp" ||
@@ -51,27 +42,30 @@ export const TextInput = ({
     }
   };
 
-  const keyupCb = (e: KeyboardEvent) => {
-    const divElement = editable.current as HTMLDivElement;
+  const keyupCb = useCallback(
+    (e: KeyboardEvent) => {
+      const divElement = editable.current as HTMLDivElement;
 
-    if (!divElement || divElement.innerHTML === parser.render(value)) {
-      return;
-    }
+      if (!divElement || divElement.innerHTML === parser.render(value)) {
+        return;
+      }
 
-    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      return;
-    }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        return;
+      }
 
-    triggerMentions(e);
-    triggerChans(e);
+      triggerMentions(e);
+      triggerChans(e);
 
-    const pos = getCaretIndex();
-    document.getSelection()?.removeAllRanges();
-    onChange(divElement.textContent || "");
-    divElement.innerHTML =
-      parser.render(divElement.textContent || "") || "&#8203;";
-    setTimeout(() => setCaretIndex(pos || 0), 0);
-  };
+      const pos = getCaretIndex();
+      document.getSelection()?.removeAllRanges();
+      onChange(divElement.textContent || "");
+      divElement.innerHTML =
+        parser.render(divElement.textContent || "") || "&#8203;";
+      setTimeout(() => setCaretIndex(pos || 0), 0);
+    },
+    [editable.current, triggerChans, triggerMentions]
+  );
 
   useEffect(() => {
     editable.current?.addEventListener("keyup", keyupCb as EventListener);
@@ -96,8 +90,9 @@ export const TextInput = ({
   return (
     <div>
       <OptionsPanel<{ username: string }>
+        onDismiss={() => setShowMentions(false)}
         show={showMentions}
-        options={filteredMentions}
+        options={mentions(currentWord)}
         renderElement={(el) => (
           <>
             <img src="/avatar.png" />
@@ -111,8 +106,9 @@ export const TextInput = ({
       />
 
       <OptionsPanel<{ name: string }>
+        onDismiss={() => setShowChannels(false)}
         show={showChannels}
-        options={filteredChannels}
+        options={channels(currentWord)}
         renderElement={(el) => (
           <>
             <img src="/hash.svg" />
